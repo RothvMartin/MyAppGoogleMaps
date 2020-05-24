@@ -6,6 +6,7 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
@@ -31,11 +32,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private GoogleMap mMap;
 
-    Button btnLoadCoordinates;
-    TextView textView;
     FusedLocationProviderClient client;
-    Boolean clientPermissions = false;
-//    Location clientLocation;
+
+    double currentLat;
+    double currentLon;
+
 
 
 
@@ -51,29 +52,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-        btnLoadCoordinates = findViewById(R.id.btnMap);
-        textView = findViewById(R.id.textView);
+
 
         client = LocationServices.getFusedLocationProviderClient(this);
 
-        if(ContextCompat.checkSelfPermission(this.getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED){
-            clientPermissions = true;
+        Intent intent = getIntent();
+        if(getIntent().getExtras() != null){
+            Bundle bundle = intent.getExtras();
+
+            if (bundle != null){
+                currentLat = bundle.getDouble("Latitude");
+                currentLon = bundle.getDouble("Longitude");
+
+            }
+
         }
-        else{
-            ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, 901);
-        }
-
-
-
-
-
 
         SupportMapFragment mapFrag = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFrag.getMapAsync(this);
-
-
-
 
 
     }
@@ -92,52 +88,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        btnLoadCoordinates.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                //This code is to enable location movement via the extended emulator interface
-                //i.e. emulating different locations
-                mMap.setMyLocationEnabled(true);
-                mMap.getUiSettings().setMyLocationButtonEnabled(false);
-                try{
-                    if(clientPermissions){
-                        loadCoordinates();
-                    }
-                    else{
-                        Toast.makeText(getApplicationContext(), "Permission was denied.", Toast.LENGTH_SHORT).show();
-                    }
+        mMap.setMyLocationEnabled(true);
+        mMap.getUiSettings().setMyLocationButtonEnabled(false);
+
+        LatLng newCoords = new LatLng(currentLat, currentLon);
+        mMap.addMarker(new MarkerOptions().position(newCoords).title("Here you @"));
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(newCoords));
 
 
-                } catch (SecurityException ex){
-                    ex.printStackTrace();
-                }
-            }
-        });
-
-        // Add a marker in Sydney and move the camera
-/*        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));*/
 
     }
 
-
-    public void loadCoordinates(){
-        Task<Location> location = client.getLastLocation();
-
-
-        //Consider removing context from params (this)
-        location.addOnCompleteListener(this, new OnCompleteListener<Location>() {
-            @Override
-            public void onComplete(@NonNull Task<Location> task) {
-                if(task.isSuccessful()){
-                    String result = Double.toString(task.getResult().getLatitude()) + "\n" +
-                            Double.toString(task.getResult().getLongitude());
-                    textView.setText(result);
-                }
-
-            }
-        });
-    }
 
 }
